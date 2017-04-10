@@ -5,7 +5,16 @@ Python
 Requires modules from pip:
 cfscrape
 BeautifulSoup4
+
+Linux only, curl needed.
+
+TODO:
+GitHub latest release
+Test SpigotMC with different plugin.
+BukkitDev latest release
+
 """
+
 
 import subprocess
 import cfscrape
@@ -17,7 +26,7 @@ def spigotmcLatestDownload(pluginName, url):
     pluginNameJar = pluginName + ".jar"
     spigotMCAddress = "https://www.spigotmc.org/"
     
-    # Download HTML to find download link
+    # Download HTML to find download link on button.
     cookie_arg, user_agent = cfscrape.get_cookie_string(url)
     print("Downloading HTML...")
     subprocess.call(["curl", "-o", pluginNameHtml, "--cookie", cookie_arg, "-A", user_agent, url])
@@ -32,9 +41,9 @@ def spigotmcLatestDownload(pluginName, url):
         print(latestDownload)
         fullLatestDownload = spigotMCAddress + latestDownload
         print("Full link: " + fullLatestDownload)
-        cookie_arg, user_agent = cfscrape.get_cookie_string(fullLatestDownload)
     
     # Download latest plugin.
+    cookie_arg, user_agent = cfscrape.get_cookie_string(fullLatestDownload)
     print("Downloading jar file: " + pluginNameJar)
     subprocess.call(["curl", "-o", pluginNameJar, "--cookie", cookie_arg, "-A", user_agent, fullLatestDownload])
 
@@ -46,7 +55,17 @@ def spigotmcPluginDownload(pluginName, url):
 
     subprocess.call(["curl", "-o", pluginName, "--cookie", cookie_arg, "-A", user_agent, url])
     
+def githubLatestRelease(pluginName, url):
+    print("test")
 
+# For any site that uses a permalink to download a specific or latest version. (Jenkins-LastSuccessfulBuild, Developer's Website, BukkitDev, etc.)
+def generalCurl(pluginName, url):
+    subprocess.call(["curl", "-o", pluginName + ".jar", url])
+    
+    
+# Put all download methods below here:
 
-#spigotmcDownload("ProtocolLib", "https://www.spigotmc.org/resources/protocollib.1997/download?version=131115")
-spigotmcLatestDownload("ProtocolLib", "https://www.spigotmc.org/resources/protocollib.1997/")
+generalCurl("ProtocolLib-Dev", "http://ci.dmulloy2.net/job/ProtocolLib/lastSuccessfulBuild/artifact/modules/ProtocolLib/target/ProtocolLib.jar")
+#githubLatestRelease("ProtocolLib" , "https://github.com/dmulloy2/ProtocolLib/releases")
+#spigotmcPluginDownloadDownload("ProtocolLib", "https://www.spigotmc.org/resources/protocollib.1997/download?version=131115")
+#spigotmcLatestDownload("ProtocolLib", "https://www.spigotmc.org/resources/protocollib.1997/")
