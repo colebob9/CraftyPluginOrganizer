@@ -18,21 +18,21 @@ any other CI
 
 TODO:
 
-Test SpigotMC with different plugin.
-Delete HTML after download is done.
-Server folder organizing
-Figure out GitHub api link when normal repo url is used.
+Make overall download folder.
+Server folder organizing: date -> Server
 specify if it is a .zip or .jar
+Check if link is an api or repo link.
 
 
 """
 
 
 import subprocess
+import os, shutil
 import cfscrape
 from bs4 import BeautifulSoup
-import os, shutil
 import requests
+
 
 # To find the latest download link from SpigotMC website, then download latest plugin with found link.
 # Make sure this is used with a resource that has the download through SpigotMC, not a redirect to another website.
@@ -78,11 +78,19 @@ def spigotmcPluginDownload(pluginName, url):
     subprocess.call(["curl", "-o", pluginName, "--cookie", cookie_arg, "-A", user_agent, url])
     
 def githubLatestRelease(pluginName, url):
-    print("Normal repo link: " + url)
-    apiUrl = "https://api.github.com/repos" + url[18:]
-    print("API link: " + apiUrl)
+    print("Link: " + url)
+    if url.startswith('https://github.com'):
+        print("URL is a normal release link. Converting to an API link...")
+        url = "https://api.github.com/repos" + url[18:]
+        print("API link: " + url)
+    elif url.startswith("https://api.github.com") and url.endswith("releases"):
+        print("URL is an API link. Proceeding...")
+    else:
+        print("GitHub link may be invalid, proceeding as if it is an API link.")
+    
+    
     print("[DOWNLOAD] Downloading latest release of " + pluginName + " from GitHub")
-    cmd = ("""curl -s %s | grep browser_download_url | grep '[.]jar' | head -n 1 | cut -d '"' -f 4""" % (apiUrl))
+    cmd = ("""curl -s %s | grep browser_download_url | grep '[.]jar' | head -n 1 | cut -d '"' -f 4""" % (url))
     latest = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
     output = latest.communicate()[0]
     output = output.decode('utf8')
