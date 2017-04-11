@@ -35,14 +35,17 @@ import os, shutil
 import requests
 
 # To find the latest download link from SpigotMC website, then download latest plugin with found link.
+# Make sure this is used with a resource that has the download through SpigotMC, not a redirect to another website.
 def spigotmcLatestDownload(pluginName, url):
     print("[DOWNLOAD] Downloading latest version of " + pluginName + " from SpigotMC.org.\n")
     pluginNameHtml = pluginName + ".html"
     pluginNameJar = pluginName + ".jar"
     spigotMCAddress = "https://www.spigotmc.org/"
+    scraper = cfscrape.create_scraper()
     
     # To find link in web page.
-    r = requests.get(url)
+    #r = requests.get(url)
+    r = scraper.get(url)
     
     encoding = r.encoding if 'charset' in r.headers.get('content-type', '').lower() else None
     soup = BeautifulSoup(r.content, "html5lib", from_encoding=encoding)
@@ -62,6 +65,7 @@ def spigotmcLatestDownload(pluginName, url):
     cookie_arg, user_agent = cfscrape.get_cookie_string(fullLatestDownload)
     print("Downloading jar file: " + pluginNameJar)
     subprocess.call(["curl", "-o", pluginNameJar, "--cookie", cookie_arg, "-A", user_agent, fullLatestDownload])
+    # Sometimes fails with ProtocolLib, used too much?
     
 
     
@@ -75,8 +79,7 @@ def spigotmcPluginDownload(pluginName, url):
     
 def githubLatestRelease(pluginName, url): # Currently requires GitHub api link
     print("[DOWNLOAD] Downloading latest release of " + pluginName + " from GitHub")
-    cmd = ("""curl -s %s | grep browser_download_url | 
-grep '[.]jar' | head -n 1 | cut -d '"' -f 4""" % (url))
+    cmd = ("""curl -s %s | grep browser_download_url | grep '[.]jar' | head -n 1 | cut -d '"' -f 4""" % (url))
     latest = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
     output = latest.communicate()[0]
     output = output.decode('utf8')
