@@ -77,9 +77,12 @@ def spigotmcPluginDownload(pluginName, url):
 
     subprocess.call(["curl", "-o", pluginName, "--cookie", cookie_arg, "-A", user_agent, url])
     
-def githubLatestRelease(pluginName, url): # Currently requires GitHub api link
+def githubLatestRelease(pluginName, url):
+    print("Normal repo link: " + url)
+    apiUrl = "https://api.github.com/repos" + url[18:]
+    print("API link: " + apiUrl)
     print("[DOWNLOAD] Downloading latest release of " + pluginName + " from GitHub")
-    cmd = ("""curl -s %s | grep browser_download_url | grep '[.]jar' | head -n 1 | cut -d '"' -f 4""" % (url))
+    cmd = ("""curl -s %s | grep browser_download_url | grep '[.]jar' | head -n 1 | cut -d '"' -f 4""" % (apiUrl))
     latest = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
     output = latest.communicate()[0]
     output = output.decode('utf8')
@@ -96,9 +99,9 @@ def generalCurl(pluginName, url):
 # Put all download methods below here:
 
 #generalCurl("ProtocolLib-Dev", "http://ci.dmulloy2.net/job/ProtocolLib/lastSuccessfulBuild/artifact/modules/ProtocolLib/target/ProtocolLib.jar")
-#githubLatestRelease("ProtocolLib-GitHub" , "https://api.github.com/repos/dmulloy2/ProtocolLib/releases")
+githubLatestRelease("ProtocolLib-GitHub" , "https://github.com/dmulloy2/ProtocolLib/releases")
 #spigotmcPluginDownload("ProtocolLib-spigotmcPluginDownload", "https://www.spigotmc.org/resources/protocollib.1997/download?version=131115")
-spigotmcLatestDownload("ProtocolLib", "https://www.spigotmc.org/resources/protocollib.1997/")
+#spigotmcLatestDownload("ProtocolLib", "https://www.spigotmc.org/resources/protocollib.1997/")
 #spigotmcLatestDownload("RogueParkour", "https://www.spigotmc.org/resources/rogueparkour-random-generated-parkour.26563/")
 
 #generalCurl("Vault", "https://dev.bukkit.org/projects/vault/files/latest")
