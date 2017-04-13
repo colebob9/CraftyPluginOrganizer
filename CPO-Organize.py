@@ -1,20 +1,18 @@
 """
-CraftyPluginOrganizer v0.4
+CraftyPluginOrganizer v0.4.1
 Python
 
 Requires modules from pip:
 cfscrape
 BeautifulSoup4
 
-Linux only, curl needed.
+Linux only, curl and jsnode packages required.
 
 Download from sites:
 SpigotMC.org
 GitHub
 BukkitDev
 Jenkins CI
-any other CI
-
 
 TODO:
 
@@ -22,7 +20,6 @@ Server folder organizing: date -> Server
     Use arguement in function call to specify which server directories to copy to.
 YAML config for configuration
 Add support for uncompressing .zip files.
-
 
 """
 
@@ -108,7 +105,7 @@ def generalCurl(pluginName, url, fileFormat):
     print("[DOWNLOAD] Downloading " + pluginName + " from URL: " + url)
     subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", url])
     
-def jenkinsLatestDownload(pluginName, url, fileFormat):
+def jenkinsLatestDownload(pluginName, url, fileFormat, searchFor):
     r = requests.get(url)
     encoding = r.encoding if 'charset' in r.headers.get('content-type', '').lower() else None
     soup = BeautifulSoup(r.content, "html5lib", from_encoding=encoding)
@@ -116,9 +113,8 @@ def jenkinsLatestDownload(pluginName, url, fileFormat):
     
     for link in soup.find_all('a'):
         hrefLink = str(link.get('href'))
-        #print(hrefLink) # Only uncomment if you want to see 
-        bukkit = "bukkit"
-        if hrefLink.count(bukkit):
+        #print(hrefLink) # Only uncomment if you want to see every link it finds on the page.
+        if hrefLink.count(searchFor):
             if hrefLink.endswith(fileFormat):
                 latestDownload = hrefLink
     
@@ -131,7 +127,7 @@ def jenkinsLatestDownload(pluginName, url, fileFormat):
 
     
 # Put all download methods below here:
-jenkinsLatestDownload("FastAsyncWorldEdit", "http://ci.athion.net/job/FastAsyncWorldEdit/lastSuccessfulBuild/artifact/target/", ".jar")
+jenkinsLatestDownload("FastAsyncWorldEdit", "http://ci.athion.net/job/FastAsyncWorldEdit/lastSuccessfulBuild/artifact/target/", ".jar", "bukkit")
 
 
 
