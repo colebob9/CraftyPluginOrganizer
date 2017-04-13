@@ -1,5 +1,5 @@
 """
-CraftyPluginOrganizer v0.3
+CraftyPluginOrganizer v0.4
 Python
 
 Requires modules from pip:
@@ -20,8 +20,9 @@ TODO:
 
 Server folder organizing: date -> Server
     Use arguement in function call to specify which server directories to copy to.
-Check if link is an api or repo link.
 YAML config for configuration
+Add support for uncompressing .zip files.
+
 
 """
 
@@ -102,18 +103,35 @@ def githubLatestRelease(pluginName, url, fileFormat):
     
     subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", output])
 
-# For any site that uses a permalink to download a specific or latest version. (Jenkins-LastSuccessfulBuild, Developer's Website, BukkitDev, etc.)
+# For any site that uses a permalink to download a specific or latest version. (Developer's Website, BukkitDev, etc.)
 def generalCurl(pluginName, url, fileFormat):
     print("[DOWNLOAD] Downloading " + pluginName + " from URL: " + url)
     subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", url])
     
+def jenkinsLatestDownload(pluginName, url, fileFormat):
+    r = requests.get(url)
+    encoding = r.encoding if 'charset' in r.headers.get('content-type', '').lower() else None
+    soup = BeautifulSoup(r.content, "html5lib", from_encoding=encoding)
+    #soup = (soup.decode("utf-8"))
+    
+    for link in soup.find_all('a'):
+        hrefLink = str(link.get('href'))
+        #print(hrefLink) # Only uncomment if you want to see 
+        bukkit = "bukkit"
+        if hrefLink.count(bukkit):
+            if hrefLink.endswith(fileFormat):
+                latestDownload = hrefLink
+    
+    print("File found: " + latestDownload)
+    latestDownloadLink = url + latestDownload
+    print("Full link: " + latestDownloadLink)
+
+    print("[DOWNLOAD] Downloading " + pluginName + " from Jenkins CI.")
+    subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", latestDownloadLink])
+
     
 # Put all download methods below here:
-
-
-githubLatestRelease("BlocksHub", "https://github.com/SBPrime/BlocksHub/releases", ".jar")
-spigotmcLatestDownload("BungeePortals", "https://www.spigotmc.org/resources/bungeeportals.19/", ".jar")
-generalCurl("ChestCommands", "https://dev.bukkit.org/projects/chest-commands/files/latest", ".jar")
+jenkinsLatestDownload("FastAsyncWorldEdit", "http://ci.athion.net/job/FastAsyncWorldEdit/lastSuccessfulBuild/artifact/target/", ".jar")
 
 
 
