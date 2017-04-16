@@ -20,6 +20,8 @@ Server folder organizing: date -> Server
     Use arguement in function call to specify which server directories to copy to.
 YAML config for configuration
 Add support for uncompressing .zip files.
+Exclude certain words from Jenkins search
+
 
 """
 
@@ -92,6 +94,7 @@ def githubLatestRelease(pluginName, url, fileFormat):
     
     
     print("[DOWNLOAD] Downloading latest release of " + pluginName + " from GitHub")
+    # Rewrite with python code
     cmd = ("""curl -s %s | grep browser_download_url | grep '[.]%s' | head -n 1 | cut -d '"' -f 4""" % (url, fileFormat[1:]))
     latest = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
     output = latest.communicate()[0]
@@ -100,22 +103,31 @@ def githubLatestRelease(pluginName, url, fileFormat):
     
     subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", output])
 
-# For any site that uses a permalink to download a specific or latest version. (Developer's Website, BukkitDev, etc.)
+# For any site that uses a permalink to download a specific or latest version. (BukkitDev, Developer's Website, etc.)
 def generalCurl(pluginName, url, fileFormat):
     print("[DOWNLOAD] Downloading " + pluginName + " from URL: " + url)
     subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", url])
     
-def jenkinsLatestDownload(pluginName, url, fileFormat, searchFor):
-    r = requests.get(url)
+def jenkinsLatestDownload(pluginName, url, fileFormat, searchFor, searchForEnd):
+    try:
+        r = requests.get(url)
+    except requests.exceptions.SSLError:
+        disableSSL = input("The script has detected that this website SSL certificates are causing problems. (Most likely an untrusted SSL cert.) \nWould you like to disable SSL to continue. (ONLY DISABLE IF YOU TRUST THE SITE) y/n: ").lower()
+        if disableSSL == "y":
+            r = requests.get(url, verify=False)
+        elif disableSSL == "n":
+            print("skipping...")
+            return
+        
     encoding = r.encoding if 'charset' in r.headers.get('content-type', '').lower() else None
     soup = BeautifulSoup(r.content, "html5lib", from_encoding=encoding)
     #soup = (soup.decode("utf-8"))
     
     for link in soup.find_all('a'):
         hrefLink = str(link.get('href'))
-        #print(hrefLink) # Only uncomment if you want to see every link it finds on the page.
+        print(hrefLink) # Only uncomment if you want to see every link it finds on the page.
         if hrefLink.count(searchFor):
-            if hrefLink.endswith(fileFormat):
+            if hrefLink.endswith(searchForEnd + fileFormat):
                 latestDownload = hrefLink
     
     print("File found: " + latestDownload)
@@ -123,11 +135,15 @@ def jenkinsLatestDownload(pluginName, url, fileFormat, searchFor):
     print("Full link: " + latestDownloadLink)
 
     print("[DOWNLOAD] Downloading " + pluginName + " from Jenkins CI.")
-    subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", latestDownloadLink])
+    if disableSSL == "y":
+        subprocess.call(["curl", "-k", "-o", pluginName + fileFormat, "-L", latestDownloadLink])
+    else:
+        subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", latestDownloadLink])
 
     
 # Put all download methods below here:
-jenkinsLatestDownload("FastAsyncWorldEdit", "http://ci.athion.net/job/FastAsyncWorldEdit/lastSuccessfulBuild/artifact/target/", ".jar", "bukkit")
+
+jenkinsLatestDownload("Multiverse-Core", "https://ci.onarandombox.com/job/Multiverse-Core/lastSuccessfulBuild/", ".jar", "Multiverse-Core", "SNAPSHOT")
 
 
 
