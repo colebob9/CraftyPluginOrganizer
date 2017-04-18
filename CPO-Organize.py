@@ -1,5 +1,5 @@
 """
-CraftyPluginOrganizer v0.4.1
+CraftyPluginOrganizer v0.5.0
 Python
 
 Requires modules from pip:
@@ -16,12 +16,9 @@ Jenkins CI
 
 TODO:
 
-Server folder organizing: date -> Server
-    Use arguement in function call to specify which server directories to copy to.
 YAML config for configuration
 Add support for uncompressing .zip files.
-Exclude certain words from Jenkins search
-
+EngineHub
 
 """
 
@@ -31,17 +28,48 @@ import os, shutil
 import cfscrape
 from bs4 import BeautifulSoup
 import requests
+import time
 
+global datetime
+global disableSSL
 
+# Config
+datetime = time.strftime("%m-%d-%Y--%I:%M%p")
+disableSSL = True
+
+# End Config
+
+# Delete Download directory
+if os.path.exists("Download"):
+    print("Deleting Download Directory...")
+    shutil.rmtree("Download")
+
+# Make directories
 if not os.path.exists("Download"):
     os.mkdir("Download")
-    print("Made Download folder. All downloaded plugins will be stored here.")
-os.chdir("Download")
+    print("Made Download directory. All downloaded plugins will be stored here.")
+if not os.path.exists("Organized"):
+    os.mkdir("Organized")
+    print("Made Organized directory. All plugins will be sorted here.")
+if not os.path.exists("Organized/" + datetime):
+    os.mkdir("Organized/" + "/" + datetime)
+    print("Made Organized/" + datetime + "directory. All plugins will be sorted here.")
+    
+# To sort plugins
+def organize(pluginName, fileFormat, servers):
+    os.chdir("..")
+    for s in servers:
+        if not os.path.exists("Organized/" + datetime + "/" + s):
+            os.mkdir("Organized/" + datetime + "/" + s)
+            print("Made " + s + " server directory.")
+        shutil.copy("Download/" + pluginName + fileFormat, "Organized/" + datetime + "/" + s + "/" + pluginName + fileFormat)
+        print("Copied: " + "Download/" + pluginName + fileFormat + " to " + "Organized/" + datetime + "/" + s + "/" + pluginName + fileFormat)
     
 
 # To find the latest download link from SpigotMC website, then download latest plugin with found link.
 # Make sure this is used with a resource that has the download through SpigotMC, not a redirect to another website.
-def spigotmcLatestDownload(pluginName, url, fileFormat):
+def spigotmcLatestDownload(pluginName, url, fileFormat, servers):
+    os.chdir("Download")
     print("[DOWNLOAD] Downloading latest version of " + pluginName + " from SpigotMC.org.\n")
     pluginNameHtml = pluginName + ".html"
     spigotMCAddress = "https://www.spigotmc.org/"
@@ -70,18 +98,21 @@ def spigotmcLatestDownload(pluginName, url, fileFormat):
     print("Downloading jar file: " + pluginName + fileFormat)
     subprocess.call(["curl", "-o", pluginName + fileFormat, "--cookie", cookie_arg, "-A", user_agent, fullLatestDownload])
     # Sometimes fails with ProtocolLib, used too much?
-    
+    organize(pluginName, fileFormat, servers)
 
     
 # To download a plugin from SpigotMC.org. Needs specific download link.
-def spigotmcPluginDownload(pluginName, url, fileFormat):
+def spigotmcPluginDownload(pluginName, url, fileFormat, servers):
+    os.chdir("Download")
     print("[DOWNLOAD] Downloading " + pluginName + " from SpigotMC.\n")
     pluginName = pluginName + fileFormat
     cookie_arg, user_agent = cfscrape.get_cookie_string(url)
 
     subprocess.call(["curl", "-o", pluginName, "--cookie", cookie_arg, "-A", user_agent, url])
+    organize(pluginName, fileFormat, servers)
     
-def githubLatestRelease(pluginName, url, fileFormat):
+def githubLatestRelease(pluginName, url, fileFormat, servers):
+    os.chdir("Download")
     print("Link: " + url)
     if url.startswith('https://github.com'):
         print("URL is a normal release link. Converting to an API link...")
@@ -102,20 +133,25 @@ def githubLatestRelease(pluginName, url, fileFormat):
     print(output)
     
     subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", output])
-
+    organize(pluginName, fileFormat, servers)
+    
 # For any site that uses a permalink to download a specific or latest version. (BukkitDev, Developer's Website, etc.)
-def generalCurl(pluginName, url, fileFormat):
+def generalCurl(pluginName, url, fileFormat, servers):
+    os.chdir("Download")
     print("[DOWNLOAD] Downloading " + pluginName + " from URL: " + url)
     subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", url])
     
-def jenkinsLatestDownload(pluginName, url, fileFormat, searchFor, searchForEnd):
+    organize(pluginName, fileFormat, servers)
+    
+def jenkinsLatestDownload(pluginName, url, fileFormat, searchFor, searchForEnd, servers):
+    os.chdir("Download")
     try:
         r = requests.get(url)
     except requests.exceptions.SSLError:
-        disableSSL = input("The script has detected that this website SSL certificates are causing problems. (Most likely an untrusted SSL cert.) \nWould you like to disable SSL to continue. (ONLY DISABLE IF YOU TRUST THE SITE) y/n: ").lower()
-        if disableSSL == "y":
+        #disableSSL = input("The script has detected that this website\'s SSL certificates are causing problems. (Most likely an untrusted SSL cert.) \nWould you like to disable SSL to continue? (ONLY DISABLE IF YOU TRUST THE SITE) y/n: ").lower()
+        if disableSSL == True:
             r = requests.get(url, verify=False)
-        elif disableSSL == "n":
+        elif disableSSL == False:
             print("skipping...")
             return
         
@@ -125,7 +161,7 @@ def jenkinsLatestDownload(pluginName, url, fileFormat, searchFor, searchForEnd):
     
     for link in soup.find_all('a'):
         hrefLink = str(link.get('href'))
-        print(hrefLink) # Only uncomment if you want to see every link it finds on the page.
+        #print(hrefLink) # Only uncomment if you want to see every link it finds on the page.
         if hrefLink.count(searchFor):
             if hrefLink.endswith(searchForEnd + fileFormat):
                 latestDownload = hrefLink
@@ -135,24 +171,12 @@ def jenkinsLatestDownload(pluginName, url, fileFormat, searchFor, searchForEnd):
     print("Full link: " + latestDownloadLink)
 
     print("[DOWNLOAD] Downloading " + pluginName + " from Jenkins CI.")
-    if disableSSL == "y":
+    if disableSSL == True:
         subprocess.call(["curl", "-k", "-o", pluginName + fileFormat, "-L", latestDownloadLink])
     else:
         subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", latestDownloadLink])
 
-    
+    organize(pluginName, fileFormat, servers)
 # Put all download methods below here:
 
-jenkinsLatestDownload("Multiverse-Core", "https://ci.onarandombox.com/job/Multiverse-Core/lastSuccessfulBuild/", ".jar", "Multiverse-Core", "SNAPSHOT")
-
-
-
-"""
-#generalCurl("ProtocolLib-Dev", "http://ci.dmulloy2.net/job/ProtocolLib/lastSuccessfulBuild/artifact/modules/ProtocolLib/target/ProtocolLib.jar")
-#githubLatestRelease("ProtocolLib-GitHub" , "https://github.com/dmulloy2/ProtocolLib/releases")
-#spigotmcPluginDownload("ProtocolLib-spigotmcPluginDownload", "https://www.spigotmc.org/resources/protocollib.1997/download?version=131115")
-spigotmcLatestDownload("ProtocolLib", "https://www.spigotmc.org/resources/protocollib.1997/")
-#spigotmcLatestDownload("RogueParkour", "https://www.spigotmc.org/resources/rogueparkour-random-generated-parkour.26563/")
-
-#generalCurl("Vault", "https://dev.bukkit.org/projects/vault/files/latest")
-"""
+jenkinsLatestDownload("Multiverse-Core", "https://ci.onarandombox.com/job/Multiverse-Core/lastSuccessfulBuild/", ".jar", "Multiverse-Core", "SNAPSHOT", ["Hub", "Creative", "Survival"])
