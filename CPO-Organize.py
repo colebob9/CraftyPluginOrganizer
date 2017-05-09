@@ -6,20 +6,21 @@ Requires modules from pip:
 cfscrape
 BeautifulSoup4
 
-Linux only, curl and jsnode packages required.
+Linux only, `curl` and `nodejs` packages required.
 
 Download from sites:
 SpigotMC.org
 GitHub
 BukkitDev
 Jenkins CI
+EngineHub
 
 TODO:
 
 YAML config for specifying downloads
 Add support for uncompressing .zip files.
 EngineHub
-Test with real server plugins
+Test with real server plugins with each download method
 Get real name of file if possible (http://stackoverflow.com/questions/6881034/curl-to-grab-remote-filename-after-following-location)
 Look at page if plugin has changed since last download. 
 BungeeCord Downloading? (Could also be put in AutoBuildTools.)
@@ -45,7 +46,7 @@ disableSSL = True
 # End Config
 
 # Title
-print("CraftyPluginOrganizer v0.5.1\ncolebob9")
+print("CraftyPluginOrganizer v0.5.1\ncolebob9\n")
 
 # Delete Download directory
 if os.path.exists("Download"):
@@ -61,7 +62,7 @@ if not os.path.exists("Organized"):
     print("Made Organized directory. All plugins will be sorted here.")
 if not os.path.exists("Organized/" + datetime):
     os.mkdir("Organized/" + "/" + datetime)
-    print("Made Organized/" + datetime + "directory. All plugins will be sorted here.")
+    print("Made Organized/" + datetime + " directory. All plugins will be sorted here.")
     
 # To sort plugins
 def organize(pluginName, fileFormat, servers):
@@ -72,6 +73,7 @@ def organize(pluginName, fileFormat, servers):
             print("Made " + s + " server directory.")
         shutil.copy("Download/" + pluginName + fileFormat, "Organized/" + datetime + "/" + s + "/" + pluginName + fileFormat)
         print("Copied: " + "Download/" + pluginName + fileFormat + " to " + "Organized/" + datetime + "/" + s + "/" + pluginName + fileFormat)
+    print("")
     
 
 # To find the latest download link from SpigotMC website, then download latest plugin with found link.
