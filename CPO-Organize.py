@@ -1,5 +1,5 @@
 """
-CraftyPluginOrganizer v0.5.1
+CraftyPluginOrganizer v0.6.0
 Python
 
 Requires modules from pip:
@@ -19,13 +19,10 @@ TODO:
 
 YAML config for specifying downloads
 Add support for uncompressing .zip files.
-EngineHub
-Test with real server plugins with each download method
-Get real name of file if possible (http://stackoverflow.com/questions/6881034/curl-to-grab-remote-filename-after-following-location)
 Look at page if plugin has changed since last download. 
-BungeeCord Downloading? (Could also be put in AutoBuildTools.)
 LibreOffice Sheet to convert list into plugin downloader
 
+Clean up most of the output from the script to be more readable.
 """
 
 
@@ -46,7 +43,7 @@ disableSSL = True
 # End Config
 
 # Title
-print("CraftyPluginOrganizer v0.5.1\ncolebob9\n")
+print("CraftyPluginOrganizer v0.6.0\ncolebob9\n")
 
 # Delete Download directory
 if os.path.exists("Download"):
@@ -121,6 +118,7 @@ def spigotmcPluginDownload(pluginName, url, fileFormat, servers):
     
 def githubLatestRelease(pluginName, url, fileFormat, servers):
     os.chdir("Download")
+    # Convert to API link
     print("Link: " + url)
     if url.startswith('https://github.com'):
         print("URL is a normal release link. Converting to an API link...")
@@ -134,6 +132,7 @@ def githubLatestRelease(pluginName, url, fileFormat, servers):
     
     print("[DOWNLOAD] Downloading latest release of " + pluginName + " from GitHub")
     # Rewrite with python code
+    
     cmd = ("""curl -s %s | grep browser_download_url | grep '[.]%s' | head -n 1 | cut -d '"' -f 4""" % (url, fileFormat[1:]))
     latest = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
     output = latest.communicate()[0]
@@ -191,21 +190,50 @@ def jenkinsLatestDownload(pluginName, url, fileFormat, searchFor, searchForEnd, 
 
     organize(pluginName, fileFormat, servers)
     
+def engineHubLatestDownload(pluginName, url, fileFormat, servers):
+    # Modified code from obzidi4n's plugins.py script
+    # get page
+    r = requests.get(url)
+
+    # parse download link with BeautifulSoup
+    soup = BeautifulSoup(r.text, 'html.parser')
+    soup2 = soup.find(class_="col-md-8")
+    soup3 = soup2.find('a')
+    target = soup3['href']
+
+    response = requests.get(target, stream=True, verify=False)
+    fileName = pluginName + fileFormat
+
+    # report
+    print('Plugin:', pluginName)
+    print('Target:', target)
+    print('File: ', fileName, '\n')
+
+    os.chdir("Download")
+    print("[DOWNLOAD] Downloading " + pluginName + " from EngineHub.")
+    subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", target])
+    
+    organize(pluginName, fileFormat, servers)
+    
+    print('Saved \n\n')
+
 # Put all download methods below here:
 
-# Test plugins
-spigotmcLatestDownload("CommandSigns", "https://www.spigotmc.org/resources/command-signs.10512/", ".jar", ["SkyBlock"])
-generalCurl("CoreProtect", "https://dev.bukkit.org/projects/coreprotect/files/latest", ".jar", ["Hub", "Creative", "Survival", "SkyBlock", "OldCreative"])
-jenkinsLatestDownload("EssentialsX", "https://ci.drtshock.net/job/essentialsx/lastSuccessfulBuild/", ".jar", "EssentialsX-2", "", ["Hub", "Creative", "Survival", "SkyBlock", "OldCreative"])
-jenkinsLatestDownload("EssentialsX-Spawn", "https://ci.drtshock.net/job/essentialsx/lastSuccessfulBuild/", ".jar", "EssentialsXSpawn-2", "", ["Hub", "Creative", "Survival", "SkyBlock", "OldCreative"])
-generalCurl("Modifyworld", "https://dev.bukkit.org/projects/modifyworld/files/latest", ".jar", ["Hub", "Creative", "Survival", "SkyBlock", "OldCreative"])
-jenkinsLatestDownload("Multiverse-Core", "https://ci.onarandombox.com/job/Multiverse-Core/lastSuccessfulBuild/", ".jar", "Multiverse-Core", "SNAPSHOT", ["Hub", "Creative", "Survival"])
-generalCurl("NoCheatPlus", "https://dev.bukkit.org/projects/nocheatplus/files/latest", ".jar", ["Hub", "Creative", "Survival", "SkyBlock", "OldCreative"])  # Not sure to do BukkitDev or Jenkins
-spigotmcLatestDownload("NuVotifier", "https://www.spigotmc.org/resources/nuvotifier.13449/", ".jar", ["Hub", "Creative", "Survival"])
-generalCurl("PermissionsEx", "https://dev.bukkit.org/projects/permissionsex/files/latest", ".jar", ["Hub", "Creative", "Survival", "SkyBlock", "OldCreative"])
-spigotmcLatestDownload("PerWorldInventory", "https://www.spigotmc.org/resources/per-world-inventory.4482/", ".jar", ["Creative", "Survival"])
-generalCurl("uSkyBlock", "https://dev.bukkit.org/projects/uskyblock/files/latest", ".jar", ["SkyBlock"])
-generalCurl("Vault", "https://dev.bukkit.org/projects/vault/files/latest", ".jar", ["Hub", "Creative", "Survival", "SkyBlock", "OldCreative"])
-generalCurl("WorldEdit", "https://dev.bukkit.org/projects/worldedit/files/latest", ".jar", ["Hub", "Creative", "Survival", "SkyBlock", "OldCreative"])
-generalCurl("WorldGuard", "https://dev.bukkit.org/projects/worldguard/files/latest", ["Hub", "Creative", "Survival", "SkyBlock", "OldCreative"])
 
+# Test Plugins:
+
+# SpigotMC.org
+spigotmcLatestDownload("PerWorldInventory", "https://www.spigotmc.org/resources/per-world-inventory.4482/", ".jar", ["Creative", "Survival"])
+spigotmcPluginDownload("PerWorldInventory", "https://www.spigotmc.org/resources/per-world-inventory.4482/download?version=151285", ".jar", ["Creative", "Survival"])
+
+# GitHub
+githubLatestRelease("ProtocolLib", "https://github.com/dmulloy2/ProtocolLib/releases", ".jar", ["Hub", "Creative", "Survival"])
+
+# BukkitDev
+generalCurl("WorldEdit", "https://dev.bukkit.org/projects/worldedit/files/latest", ".jar", ["Hub", "Creative", "Survival"])
+
+# Jenkins CI
+jenkinsLatestDownload("Multiverse-Core", "https://ci.onarandombox.com/job/Multiverse-Core/lastSuccessfulBuild/", ".jar", "Multiverse-Core", "SNAPSHOT", ["Hub", "Creative", "Survival"])
+
+# EngineHub
+engineHubLatestDownload("WorldEdit-Dev", "http://builds.enginehub.org/job/worldedit/last-successful?branch=master", ".jar", ["Hub", "Creative"])
