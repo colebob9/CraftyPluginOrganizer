@@ -106,14 +106,14 @@ def spigotmcLatestDownload(pluginName, url, fileFormat, servers):
     organize(pluginName, fileFormat, servers)
 
     
-# To download a plugin from SpigotMC.org. Needs specific download link.
+# To download a specific version of a plugin from SpigotMC.org. Requires more
 def spigotmcPluginDownload(pluginName, url, fileFormat, servers):
     os.chdir("Download")
     print("[DOWNLOAD] Downloading " + pluginName + " from SpigotMC.\n")
-    pluginName = pluginName + fileFormat
+    
     cookie_arg, user_agent = cfscrape.get_cookie_string(url)
 
-    subprocess.call(["curl", "-o", pluginName, "--cookie", cookie_arg, "-A", user_agent, url])
+    subprocess.call(["curl", "-o", pluginName + fileFormat, "--cookie", cookie_arg, "-A", user_agent, url])
     organize(pluginName, fileFormat, servers)
     
 def githubLatestRelease(pluginName, url, fileFormat, servers):
