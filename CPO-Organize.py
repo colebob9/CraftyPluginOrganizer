@@ -1,6 +1,6 @@
 """
-CraftyPluginOrganizer v0.6.0
-Python
+CraftyPluginOrganizer v0.7.0
+Python 3
 
 Requires modules from pip:
 cfscrape
@@ -21,7 +21,7 @@ YAML config for specifying downloads
 Add support for uncompressing .zip files.
 Look at page if plugin has changed since last download. 
 LibreOffice Sheet to convert list into plugin downloader
-
+Add checks to make sure the file exists and is not an html page.
 Clean up most of the output from the script to be more readable.
 """
 
@@ -32,6 +32,8 @@ import cfscrape
 from bs4 import BeautifulSoup
 import requests
 import time
+import json
+from urllib.request import urlopen
 
 global datetime
 global disableSSL
@@ -43,7 +45,7 @@ disableSSL = True
 # End Config
 
 # Title
-print("CraftyPluginOrganizer v0.6.0\ncolebob9\n")
+print("CraftyPluginOrganizer v0.7.0\ncolebob9\n")
 
 # Delete Download directory
 if os.path.exists("Download"):
@@ -61,16 +63,24 @@ if not os.path.exists("Organized/" + datetime):
     os.mkdir("Organized/" + "/" + datetime)
     print("Made Organized/" + datetime + " directory. All plugins will be sorted here.")
     
-# To sort plugins
+
 def organize(pluginName, fileFormat, servers):
     os.chdir("..")
+    
+    # To check plugin was downloaded correctly
+    
+    # To sort plugins
     for s in servers:
         if not os.path.exists("Organized/" + datetime + "/" + s):
             os.mkdir("Organized/" + datetime + "/" + s)
             print("Made " + s + " server directory.")
-        shutil.copy("Download/" + pluginName + fileFormat, "Organized/" + datetime + "/" + s + "/" + pluginName + fileFormat)
-        print("Copied: " + "Download/" + pluginName + fileFormat + " to " + "Organized/" + datetime + "/" + s + "/" + pluginName + fileFormat)
+        fromDownloadJar = "Download/" + pluginName + fileFormat
+        toOrganizedJar = "Organized/" + datetime + "/" + s + "/" + pluginName + fileFormat
+        shutil.copy(fromDownloadJar, toOrganizedJar)
+        print("Copied: " + fromDownloadJar + " to " + toOrganizedJar)
     print("")
+    
+    
     
 
 # To find the latest download link from SpigotMC website, then download latest plugin with found link.
@@ -106,7 +116,7 @@ def spigotmcLatestDownload(pluginName, url, fileFormat, servers):
     organize(pluginName, fileFormat, servers)
 
     
-# To download a specific version of a plugin from SpigotMC.org. Requires more
+# To download a specific version of a plugin from SpigotMC.org. Requires specific version download link.
 def spigotmcPluginDownload(pluginName, url, fileFormat, servers):
     os.chdir("Download")
     print("[DOWNLOAD] Downloading " + pluginName + " from SpigotMC.\n")
@@ -131,22 +141,20 @@ def githubLatestRelease(pluginName, url, fileFormat, servers):
     
     
     print("[DOWNLOAD] Downloading latest release of " + pluginName + " from GitHub")
-    # Rewrite with python code
     
-    cmd = ("""curl -s %s | grep browser_download_url | grep '[.]%s' | head -n 1 | cut -d '"' -f 4""" % (url, fileFormat[1:]))
-    latest = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-    output = latest.communicate()[0]
-    output = output.decode('utf8')
-    print(output)
+    # Rewritten code! Yay!
+    response = urlopen(url).read().decode('utf8')
+    jsonDict = json.loads(response)
     
-    # Take /n off
-    output = output.rstrip() 
+    #print(jsonDict)
+    latestDownloadLink = jsonDict[0]['assets'][0]['browser_download_url']
+    print("Found latest release download: " + latestDownloadLink)
     
     print("Using curl command:")
-    print(["curl", "-o", pluginName + fileFormat, "-L", output])
-    subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", output])
+    print(["curl", "-o", pluginName + fileFormat, "-L", latestDownloadLink])
+    subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", latestDownloadLink])
     organize(pluginName, fileFormat, servers)
-    
+
 # For any site that uses a permalink to download a specific or latest version. (BukkitDev, Developer's Website, etc.)
 def generalCurl(pluginName, url, fileFormat, servers):
     os.chdir("Download")
@@ -214,8 +222,6 @@ def engineHubLatestDownload(pluginName, url, fileFormat, servers):
     subprocess.call(["curl", "-o", pluginName + fileFormat, "-L", target])
     
     organize(pluginName, fileFormat, servers)
-    
-    print('Saved \n\n')
 
 # Put all download methods below here:
 
