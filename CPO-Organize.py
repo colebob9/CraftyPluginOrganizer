@@ -1,5 +1,5 @@
 """
-CraftyPluginOrganizer v0.7.0
+CraftyPluginOrganizer v0.8.0
 Python 3
 
 Requires modules from pip:
@@ -7,6 +7,8 @@ cfscrape
 BeautifulSoup4
 
 Linux only, `curl` and `nodejs` packages required.
+
+(add more dependencies from github page for cfscrape)
 
 Download from sites:
 SpigotMC.org
@@ -17,12 +19,11 @@ EngineHub
 
 TODO:
 
-YAML config for specifying downloads
 Add support for uncompressing .zip files.
 Look at page if plugin has changed since last download. 
-LibreOffice Sheet to convert list into plugin downloader
 Add checks to make sure the file exists and is not an html page.
 Clean up most of the output from the script to be more readable.
+Add clean up for older organized plugin downloads
 """
 
 
@@ -34,6 +35,7 @@ import requests
 import time
 import json
 from urllib.request import urlopen
+import configparser
 
 global datetime
 global disableSSL
@@ -41,11 +43,12 @@ global disableSSL
 # Config
 datetime = time.strftime("%m-%d-%Y--%I:%M%p")
 disableSSL = True
+configDir = "config"
 
 # End Config
 
 # Title
-print("CraftyPluginOrganizer v0.7.0\ncolebob9\n")
+print("CraftyPluginOrganizer v0.8.0\ncolebob9\n")
 
 # Delete Download directory
 if os.path.exists("Download"):
@@ -62,6 +65,72 @@ if not os.path.exists("Organized"):
 if not os.path.exists("Organized/" + datetime):
     os.mkdir("Organized/" + "/" + datetime)
     print("Made Organized/" + datetime + " directory. All plugins will be sorted here.")
+    
+# Create config
+
+
+
+if not os.path.exists(configDir):
+    print("Did not find config directory. Creating...")
+    os.mkdir(configDir)
+
+config = configparser.RawConfigParser()
+config.optionxform = str
+
+if not os.path.isfile(configDir + "/" + "plugins.cfg"):
+    print("Did not find plugins.cfg. Creating example...")
+    # SpigotMCLatestDownload
+    config.add_section('PerWorldInventory')
+    config.set('PerWorldInventory', 'site', "SpigotMCLatest")
+    config.set('PerWorldInventory', 'url', "https://www.spigotmc.org/resources/per-world-inventory.4482/")
+    config.set('PerWorldInventory', 'filetype', ".jar")
+    config.set('PerWorldInventory', 'servers', "Creative,Survival")
+
+    #SpigotMCDownload
+    config.add_section('PerWorldInventory2')
+    config.set('PerWorldInventory2', 'site', "SpigotMCDownload")
+    config.set('PerWorldInventory2', 'url', "https://www.spigotmc.org/resources/per-world-inventory.4482/download?version=151285")
+    config.set('PerWorldInventory2', 'filetype', ".jar")
+    config.set('PerWorldInventory2', 'servers', "Creative,Survival")
+
+    # GitHubLatestRelease
+    config.add_section('ProtocolLib')
+    config.set('ProtocolLib', 'site', "GitHubRelease")
+    config.set('ProtocolLib', 'url', "https://github.com/dmulloy2/ProtocolLib/releases")
+    config.set('ProtocolLib', 'filetype', ".jar")
+    config.set('ProtocolLib', 'servers', "Hub,Creative,Survival")
+
+    # BukkitDev / GeneralCurl
+    config.add_section('WorldEdit')
+    config.set('WorldEdit', 'site', "Curl")
+    config.set('WorldEdit', 'url', "https://dev.bukkit.org/projects/worldedit/files/latest")
+    config.set('WorldEdit', 'filetype', ".jar")
+    config.set('WorldEdit', 'servers', "Hub,Creative,Survival")
+
+
+    # Jenkins CI
+    config.add_section('Multiverse-Core')
+    config.set('Multiverse-Core', 'site', "Jenkins")
+    config.set('Multiverse-Core', 'url', "https://ci.onarandombox.com/job/Multiverse-Core/lastSuccessfulBuild/")
+    config.set('Multiverse-Core', 'filetype', ".jar")
+    config.set('Multiverse-Core', 'servers', "Hub,Creative,Survival")
+    config.set('Multiverse-Core', 'searchfor', "Multiverse-Core")
+    config.set('Multiverse-Core', 'searchforend', "SNAPSHOT")
+
+
+    # EngineHub
+    config.add_section('WorldEdit-Dev')
+    config.set('WorldEdit-Dev', 'site', "EngineHub")
+    config.set('WorldEdit-Dev', 'url', "http://builds.enginehub.org/job/worldedit/last-successful?branch=master")
+    config.set('WorldEdit-Dev', 'filetype', ".jar")
+    config.set('WorldEdit-Dev', 'servers', "Hub,Creative")
+
+
+    with open(configDir + "/" + 'plugins.cfg', 'w') as configfile:
+        config.write(configfile)
+        
+    print("An example plugins.cfg has been created.")
+    print("Please configure and launch again.")
     
 
 def organize(pluginName, fileFormat, servers):
@@ -223,23 +292,33 @@ def engineHubLatestDownload(pluginName, url, fileFormat, servers):
     
     organize(pluginName, fileFormat, servers)
 
-# Put all download methods below here:
-
-
-# Test Plugins:
-
-# SpigotMC.org
-spigotmcLatestDownload("PerWorldInventory", "https://www.spigotmc.org/resources/per-world-inventory.4482/", ".jar", ["Creative", "Survival"])
-spigotmcPluginDownload("PerWorldInventory", "https://www.spigotmc.org/resources/per-world-inventory.4482/download?version=151285", ".jar", ["Creative", "Survival"])
-
-# GitHub
-githubLatestRelease("ProtocolLib", "https://github.com/dmulloy2/ProtocolLib/releases", ".jar", ["Hub", "Creative", "Survival"])
-
-# BukkitDev
-generalCurl("WorldEdit", "https://dev.bukkit.org/projects/worldedit/files/latest", ".jar", ["Hub", "Creative", "Survival"])
-
-# Jenkins CI
-jenkinsLatestDownload("Multiverse-Core", "https://ci.onarandombox.com/job/Multiverse-Core/lastSuccessfulBuild/", ".jar", "Multiverse-Core", "SNAPSHOT", ["Hub", "Creative", "Survival"])
-
-# EngineHub
-engineHubLatestDownload("WorldEdit-Dev", "http://builds.enginehub.org/job/worldedit/last-successful?branch=master", ".jar", ["Hub", "Creative"])
+    
+config.read(configDir + "/" + "plugins.cfg")
+for each_section in config.sections():
+    #spigotmcLatestDownload(pluginName, url, fileFormat, servers)
+    
+    site = config.get(each_section, 'site')
+    url = config.get(each_section, 'url')
+    filetype = config.get(each_section, 'filetype')
+    servers = (config.get(each_section, 'servers')).split(',')
+    
+    
+    if site == "SpigotMCLatest":
+        spigotmcLatestDownload(each_section, url, filetype, servers)
+    elif site == "SpigotMCDownload":
+        spigotmcPluginDownload(each_section, url, filetype, servers)
+    elif site == "GitHubRelease":
+        githubLatestRelease(each_section, url, filetype, servers)
+    elif site == "Curl":
+        generalCurl(each_section, url, filetype, servers)
+    elif site == "Jenkins":
+        searchFor = config.get(each_section, 'searchfor')
+        searchForEnd = config.get(each_section, 'searchforend')
+        jenkinsLatestDownload(each_section, url, filetype, searchFor, searchForEnd, servers)
+    elif site == "EngineHub":
+        engineHubLatestDownload(each_section, url, filetype, servers)
+    else:
+        print(each_section + " has an invalid site: " + site)
+        print("Please fix in your plugins.cfg config")
+        
+        
